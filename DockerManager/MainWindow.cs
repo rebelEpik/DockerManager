@@ -108,7 +108,7 @@ namespace DockerManager
 
         private async void UpdateGUI()
         {
-            if(displayPanel.Controls.Count != 0) { displayPanel.Controls.Clear(); }
+            if (displayPanel.Controls.Count != 0) { displayPanel.Controls.Clear(); }
             dockerStats?.Clear();
 
             dockerContainerTabs = new TabControl
@@ -191,8 +191,10 @@ namespace DockerManager
 
         }
 
-
-
-
+        private void PreferencesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Preferences pf = new Preferences();
+            pf.Show();
+        }
     }
 }

@@ -41,6 +41,8 @@
             toolStripStatusLabel1 = new ToolStripStatusLabel();
             dockerRefreshTimer = new System.Windows.Forms.Timer(components);
             displayPanel = new Panel();
+            preferencesToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator1 = new ToolStripSeparator();
             menuStrip1.SuspendLayout();
             statusStrip1.SuspendLayout();
             SuspendLayout();
@@ -56,7 +58,7 @@
             // 
             // fileToolStripMenuItem
             // 
-            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { closeToolStripMenuItem });
+            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { preferencesToolStripMenuItem, toolStripSeparator1, closeToolStripMenuItem });
             fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             fileToolStripMenuItem.Size = new Size(37, 20);
             fileToolStripMenuItem.Text = "File";
@@ -64,7 +66,7 @@
             // closeToolStripMenuItem
             // 
             closeToolStripMenuItem.Name = "closeToolStripMenuItem";
-            closeToolStripMenuItem.Size = new Size(103, 22);
+            closeToolStripMenuItem.Size = new Size(180, 22);
             closeToolStripMenuItem.Text = "Close";
             closeToolStripMenuItem.Click += CloseToolStripMenuItem_Click;
             // 
@@ -129,6 +131,18 @@
             displayPanel.Size = new Size(800, 404);
             displayPanel.TabIndex = 2;
             // 
+            // preferencesToolStripMenuItem
+            // 
+            preferencesToolStripMenuItem.Name = "preferencesToolStripMenuItem";
+            preferencesToolStripMenuItem.Size = new Size(180, 22);
+            preferencesToolStripMenuItem.Text = "Preferences";
+            preferencesToolStripMenuItem.Click += PreferencesToolStripMenuItem_Click;
+            // 
+            // toolStripSeparator1
+            // 
+            toolStripSeparator1.Name = "toolStripSeparator1";
+            toolStripSeparator1.Size = new Size(177, 6);
+            // 
             // MainWindow
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -162,5 +176,7 @@
         private ToolStripStatusLabel toolStripStatusLabel1;
         private System.Windows.Forms.Timer dockerRefreshTimer;
         private Panel displayPanel;
+        private ToolStripMenuItem preferencesToolStripMenuItem;
+        private ToolStripSeparator toolStripSeparator1;
     }
 }
