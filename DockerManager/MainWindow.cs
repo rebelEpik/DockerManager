@@ -1,28 +1,120 @@
 using System.Diagnostics;
+using System.ComponentModel;
 
 namespace DockerManager
 {
     public partial class MainWindow : Form
     {
-        private TabControl dockerContainerTabs;
-        private List<string> containerNames;
-        private List<DockerInfo> dockerStats;
-
+        private BindingSource dockerBindingSource;
+        private SortableBindingList<DockerInfo> dockerStats;
+        private DataGridView dockerDataGrid = new DataGridView();
+        private TabControl dockerTabs = new TabControl();
 
         public MainWindow()
         {
             InitializeComponent();
-            UpdateGUI();
+            dockerTabs.Dock = DockStyle.Fill;
+
+            TabPage overviewTab = new TabPage("Overview");
+            dockerDataGrid.Dock = DockStyle.Fill;
+            overviewTab.Controls.Add(dockerDataGrid);
+            dockerTabs.TabPages.Add(overviewTab);
+            displayPanel.Controls.Add(dockerTabs);
+
+
+
+
+            InitializeDockerDataGrid();
+            BindDockerStats();
+            
         }
 
-
-
-        private static async Task<List<DockerInfo>> GetDockerStatsAsync() => await Task.Run(() =>
+        private void InitializeDockerDataGrid()
         {
-            // Initialize a list to store DockerInfo objects
-            var stats = new List<DockerInfo>();
+            dockerBindingSource = new BindingSource();
+            dockerStats = new SortableBindingList<DockerInfo>();
 
-            // Set up the process start information for the docker stats command
+            // Bind the SortableBindingList to the BindingSource
+            dockerBindingSource.DataSource = dockerStats;
+
+            // Bind the BindingSource to the DataGridView
+            dockerDataGrid.DataSource = dockerBindingSource;
+
+            // Subscribe to the ListChanged event
+            dockerStats.ListChanged += DockerStats_ListChanged;
+        }
+
+        private async Task BindDockerStats()
+        {
+            // Call the GetDockerStatsAsync method to get the Docker stats
+            var newDockerStats = await GetDockerStatsAsync();
+
+            // Update the SortableBindingList with new items
+            foreach (var newDockerInfo in newDockerStats)
+            {
+                var existingDockerInfo = dockerStats.FirstOrDefault(dockerInfo => dockerInfo.ContainerID == newDockerInfo.ContainerID);
+
+                if (existingDockerInfo != null)
+                {
+                    // Check if any fields do not match
+                    if (existingDockerInfo.ContainerName != newDockerInfo.ContainerName ||
+                        existingDockerInfo.CPUUsage != newDockerInfo.CPUUsage ||
+                        existingDockerInfo.MemUsage != newDockerInfo.MemUsage ||
+                        existingDockerInfo.NetIO != newDockerInfo.NetIO ||
+                        existingDockerInfo.BlockIO != newDockerInfo.BlockIO ||
+                        existingDockerInfo.PID != newDockerInfo.PID)
+                    {
+                        // Remove the old entry
+                        dockerStats.Remove(existingDockerInfo);
+                        // Add the new entry
+                        dockerStats.Add(newDockerInfo);
+                    }
+                }
+                else
+                {
+                    // Add the new entry if it doesn't exist
+                    dockerStats.Add(newDockerInfo);
+                }
+            }
+
+            foreach (TabPage tabPage in dockerTabs.TabPages)
+            {
+                if(tabPage.Text != "Overview")
+                {
+                    // Create a HashSet to store existing tab names
+                    HashSet<string> existingTabs = new HashSet<string>();
+                    foreach (TabPage page in dockerTabs.TabPages)
+                    {
+                        existingTabs.Add(page.Text);
+                    }
+
+                    // Iterate through dockerStats and add new tabs for entries not in existingTabs
+                    foreach (var dockerInfo in dockerStats)
+                    {
+                        if (!existingTabs.Contains(dockerInfo.ContainerName))
+                        {
+                            TabPage newTab = new TabPage(dockerInfo.ContainerName);
+                            dockerTabs.TabPages.Add(newTab);
+                            existingTabs.Add(dockerInfo.ContainerName); // Add to existing tabs to avoid duplicates
+                        }
+                    }
+                }
+            }
+
+            // Sort the SortableBindingList by ContainerName
+            dockerStats.Sort("ContainerName", ListSortDirection.Ascending);
+        }
+
+        private void DockerStats_ListChanged(object sender, ListChangedEventArgs e)
+        {
+            // Handle the ListChanged event to update the DataGridView
+            dockerBindingSource.ResetBindings(false);
+        }
+
+        private static async Task<SortableBindingList<DockerInfo>> GetDockerStatsAsync() => await Task.Run(() =>
+        {
+            var stats = new SortableBindingList<DockerInfo>();
+
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = "docker",
@@ -32,25 +124,21 @@ namespace DockerManager
                 CreateNoWindow = true
             };
 
-            // Start the process to execute the docker stats command
             using (var process = new Process { StartInfo = processStartInfo })
             {
                 process.Start();
 
-                // Read the output from the docker stats command line by line
                 while (!process.StandardOutput.EndOfStream)
                 {
                     var line = process.StandardOutput.ReadLine();
                     if (!string.IsNullOrEmpty(line))
                     {
-                        // Split the line into container ID and stats parts
                         var parts = line.Split(":");
                         if (parts.Length == 2)
                         {
                             string containerID = parts[0].Trim();
                             var statParts = parts[1].Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-                            // Create a DockerInfo object with the parsed stats
                             DockerInfo dockerInfo = new(
                                 statParts[0], // Container Name
                                 containerID,  // Container ID
@@ -61,22 +149,46 @@ namespace DockerManager
                                 statParts[11] // PIDs
                             );
 
-                            // Add the DockerInfo object to the stats list
                             stats.Add(dockerInfo);
                         }
                     }
                 }
             }
 
-            // Return the list of DockerInfo objects
             return stats;
         });
 
+
+
+
+
+
+
+        private async void DockerRefreshTimer_Tick(object sender, EventArgs e)
+        {
+            // Refresh the Docker stats
+            await BindDockerStats();
+        }
+
+
+
+
+
+        #region MenuStripEventHandlers
+        //Opens Preferences Window
+        private void PreferencesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Preferences pf = new Preferences();
+            pf.Show();
+        }
+
+        //Closes program
         private void CloseToolStripMenuItem_Click(object sender, EventArgs e)
         {
             this.Close();
         }
 
+        //Runs restart commands on all docker images
         private async void RestartAllToolStripMenuItem_Click(object sender, EventArgs e)
         {
             await Task.Run(() =>
@@ -99,102 +211,6 @@ namespace DockerManager
                 }
             });
         }
-
-
-        private async void DockerRefreshTimer_Tick(object sender, EventArgs e)
-        {
-            UpdateGUI();
-        }
-
-        private async void UpdateGUI()
-        {
-            if (displayPanel.Controls.Count != 0) { displayPanel.Controls.Clear(); }
-            dockerStats?.Clear();
-
-            dockerContainerTabs = new TabControl
-            {
-                Dock = DockStyle.Fill
-            };
-            displayPanel.Controls.Add(dockerContainerTabs);
-
-
-            containerNames = [];
-
-            dockerStats = await GetDockerStatsAsync();
-
-
-            // Create the Overview tab
-            var overviewTab = new TabPage("Overview");
-            var overviewTable = new TableLayoutPanel
-            {
-                ColumnCount = 7,
-                Dock = DockStyle.Fill,
-                AutoSize = true
-            };
-            overviewTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28F));
-            overviewTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28F));
-            overviewTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28F));
-            overviewTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28F));
-            overviewTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28F));
-            overviewTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28F));
-            overviewTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14.28F));
-
-            // Add headers to the table
-            overviewTable.Controls.Add(new Label { Text = "Container Name", AutoSize = true }, 0, 0);
-            overviewTable.Controls.Add(new Label { Text = "Container ID", AutoSize = true }, 0, 0);
-            overviewTable.Controls.Add(new Label { Text = "CPU %", AutoSize = true }, 1, 0);
-            overviewTable.Controls.Add(new Label { Text = "Memory Usage", AutoSize = true }, 2, 0);
-            overviewTable.Controls.Add(new Label { Text = "Net I/O", AutoSize = true }, 3, 0);
-            overviewTable.Controls.Add(new Label { Text = "Block I/O", AutoSize = true }, 4, 0);
-            overviewTable.Controls.Add(new Label { Text = "PIDs", AutoSize = true }, 5, 0);
-
-            Panel underlinePanel = new()
-            {
-                Height = 2, // Set the height of the underline
-                Dock = DockStyle.Bottom,
-                BackColor = Color.Black // Set the color of the underline
-            };
-            overviewTable.Controls.Add(underlinePanel, 0, 1);
-            overviewTable.SetColumnSpan(underlinePanel, 7);
-
-            int row = 2;
-            foreach (DockerInfo dInfo in dockerStats)
-            {
-                containerNames.Add(dInfo.ContainerName); // Add container name to the list
-
-                overviewTable.Controls.Add(new Label { Text = dInfo.ContainerName, AutoSize = true }, 0, row);
-                overviewTable.Controls.Add(new Label { Text = dInfo.ContainerID, AutoSize = true }, 0, row);
-                overviewTable.Controls.Add(new Label { Text = dInfo.CPUUsage, AutoSize = true }, 1, row);
-                overviewTable.Controls.Add(new Label { Text = dInfo.MemUsage, AutoSize = true }, 2, row);
-                overviewTable.Controls.Add(new Label { Text = dInfo.NetIO, AutoSize = true }, 3, row);
-                overviewTable.Controls.Add(new Label { Text = dInfo.BlockIO, AutoSize = true }, 4, row);
-                overviewTable.Controls.Add(new Label { Text = dInfo.PID, AutoSize = true }, 5, row);
-                row++;
-            }
-
-            overviewTab.Controls.Add(overviewTable);
-            dockerContainerTabs.TabPages.Add(overviewTab);
-
-            // Add individual container tabs
-            foreach (DockerInfo dInfo in dockerStats)
-            {
-                TabPage tabPage = new(dInfo.ContainerName);
-                var textBox = new TextBox
-                {
-                    Multiline = true,
-                    Dock = DockStyle.Fill,
-                    Text = dInfo.ContainerID
-                };
-                tabPage.Controls.Add(textBox);
-                dockerContainerTabs.TabPages.Add(tabPage);
-            }
-
-        }
-
-        private void PreferencesToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            Preferences pf = new Preferences();
-            pf.Show();
-        }
+        #endregion
     }
 }

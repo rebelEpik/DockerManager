@@ -31,6 +31,8 @@
             components = new System.ComponentModel.Container();
             menuStrip1 = new MenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
+            preferencesToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator1 = new ToolStripSeparator();
             closeToolStripMenuItem = new ToolStripMenuItem();
             dockerToolStripMenuItem = new ToolStripMenuItem();
             stopAllToolStripMenuItem = new ToolStripMenuItem();
@@ -40,11 +42,11 @@
             statusStrip1 = new StatusStrip();
             toolStripStatusLabel1 = new ToolStripStatusLabel();
             dockerRefreshTimer = new System.Windows.Forms.Timer(components);
+            dockerInfoBindingSource = new BindingSource(components);
             displayPanel = new Panel();
-            preferencesToolStripMenuItem = new ToolStripMenuItem();
-            toolStripSeparator1 = new ToolStripSeparator();
             menuStrip1.SuspendLayout();
             statusStrip1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)dockerInfoBindingSource).BeginInit();
             SuspendLayout();
             // 
             // menuStrip1
@@ -63,10 +65,22 @@
             fileToolStripMenuItem.Size = new Size(37, 20);
             fileToolStripMenuItem.Text = "File";
             // 
+            // preferencesToolStripMenuItem
+            // 
+            preferencesToolStripMenuItem.Name = "preferencesToolStripMenuItem";
+            preferencesToolStripMenuItem.Size = new Size(135, 22);
+            preferencesToolStripMenuItem.Text = "Preferences";
+            preferencesToolStripMenuItem.Click += PreferencesToolStripMenuItem_Click;
+            // 
+            // toolStripSeparator1
+            // 
+            toolStripSeparator1.Name = "toolStripSeparator1";
+            toolStripSeparator1.Size = new Size(132, 6);
+            // 
             // closeToolStripMenuItem
             // 
             closeToolStripMenuItem.Name = "closeToolStripMenuItem";
-            closeToolStripMenuItem.Size = new Size(180, 22);
+            closeToolStripMenuItem.Size = new Size(135, 22);
             closeToolStripMenuItem.Text = "Close";
             closeToolStripMenuItem.Click += CloseToolStripMenuItem_Click;
             // 
@@ -120,8 +134,12 @@
             // dockerRefreshTimer
             // 
             dockerRefreshTimer.Enabled = true;
-            dockerRefreshTimer.Interval = 60000;
+            dockerRefreshTimer.Interval = 5000;
             dockerRefreshTimer.Tick += DockerRefreshTimer_Tick;
+            // 
+            // dockerInfoBindingSource
+            // 
+            dockerInfoBindingSource.DataSource = typeof(DockerInfo);
             // 
             // displayPanel
             // 
@@ -130,18 +148,6 @@
             displayPanel.Name = "displayPanel";
             displayPanel.Size = new Size(800, 404);
             displayPanel.TabIndex = 2;
-            // 
-            // preferencesToolStripMenuItem
-            // 
-            preferencesToolStripMenuItem.Name = "preferencesToolStripMenuItem";
-            preferencesToolStripMenuItem.Size = new Size(180, 22);
-            preferencesToolStripMenuItem.Text = "Preferences";
-            preferencesToolStripMenuItem.Click += PreferencesToolStripMenuItem_Click;
-            // 
-            // toolStripSeparator1
-            // 
-            toolStripSeparator1.Name = "toolStripSeparator1";
-            toolStripSeparator1.Size = new Size(177, 6);
             // 
             // MainWindow
             // 
@@ -158,6 +164,7 @@
             menuStrip1.PerformLayout();
             statusStrip1.ResumeLayout(false);
             statusStrip1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)dockerInfoBindingSource).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -175,8 +182,9 @@
         private StatusStrip statusStrip1;
         private ToolStripStatusLabel toolStripStatusLabel1;
         private System.Windows.Forms.Timer dockerRefreshTimer;
-        private Panel displayPanel;
         private ToolStripMenuItem preferencesToolStripMenuItem;
         private ToolStripSeparator toolStripSeparator1;
+        private BindingSource dockerInfoBindingSource;
+        private Panel displayPanel;
     }
 }
